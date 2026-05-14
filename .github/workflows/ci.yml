@@ -47,7 +47,7 @@ jobs:
             pytest.xml
           show-diffcover: 'true'
 
-      - name: Run review agent
+      - name: Run agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
