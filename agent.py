@@ -121,12 +121,11 @@ llm = OpenAI(
 
 # --- ContextAgent ---
 
-context_system_prompt = """You are the context gathering agent. When gathering context, you MUST gather:
-  - The PR details: author, title, body, diff_url, state, and head_sha
-  - Changed files
-  - Any requested files
-
-Once you gather the requested info, you MUST hand control back to the CommentorAgent."""
+context_system_prompt = """You are the context gathering agent. When gathering context, you MUST gather \n: 
+  - The details: author, title, body, diff_url, state, and head_sha; \n
+  - Changed files; \n
+  - Any requested for files; \n
+Once you gather the requested info, you MUST hand control back to the Commentor Agent."""
 
 context_agent = FunctionAgent(
     llm=llm,
@@ -140,25 +139,22 @@ context_agent = FunctionAgent(
 
 # --- CommentorAgent ---
 
-commentor_system_prompt = """You are the commentor agent that writes review comments for pull requests as a human reviewer would.
-
-You will receive context from the ContextAgent including PR details, changed files, and commit patches.
-
-INSTRUCTIONS:
-1. Look at the context that has been gathered already.
-2. Write a ~200-300 word review in markdown format covering:
-   - What is good about the PR
-   - Whether the author followed contribution rules
-   - Whether there are tests for new functionality
-   - Whether new endpoints are documented
-   - Suggestions for improvement with quoted code lines
-3. Call add_comment_to_state with your full review.
-4. Hand off to ReviewAndPostingAgent.
-
-CRITICAL: 
-- Do NOT ask for more information. Use whatever context you have.
-- ALWAYS call add_comment_to_state and then hand off to ReviewAndPostingAgent.
-- Never output a final response without first handing off."""
+commentor_system_prompt = """You are the commentor agent that writes review comments for pull requests as a human reviewer would. \n 
+Ensure to do the following for a thorough review: 
+ - Request for the PR details, changed files, and any other repo files you may need from the Context Agent. 
+ - Once you have asked for all the needed information, write a good ~200-300 word review in markdown format detailing: \n
+    - What is good about the PR? \n
+    - Did the author follow ALL contribution rules? What is missing? \n
+    - Are there tests for new functionality? If there are new models, are there migrations for them? - use the diff to determine this. \n
+    - Are new endpoints documented? - use the diff to determine this. \n 
+    - Which lines could be improved upon? Quote these lines and offer suggestions the author could implement. \n
+ - If you need any additional details, you must hand off to the Context Agent. \n
+ - You should directly address the author. So your comments should sound like: \n
+ "Thanks for fixing this. I think all places where we call quote should be fixed. Can you roll this fix out everywhere?"
+ - IMPORTANT: You MUST follow these steps in order:
+   1. Call add_comment_to_state with your draft review.
+   2. Immediately call handoff to ReviewAndPostingAgent.
+   3. NEVER output a final response. Always hand off to ReviewAndPostingAgent."""
 
 commentor_agent = FunctionAgent(
     llm=llm,
@@ -172,15 +168,17 @@ commentor_agent = FunctionAgent(
 
 # --- ReviewAndPostingAgent ---
 
-review_and_posting_system_prompt = """You are the Review and Posting agent.
-
-INSTRUCTIONS:
-1. First, hand off to CommentorAgent to generate the review.
-2. When the CommentorAgent finishes and hands back to you, retrieve the draft comment from state.
-3. Call post_review_to_github with the PR number and the draft comment.
-4. ALWAYS post the review — do not skip this step.
-
-The PR number is in the user's query. Extract it and use it to post the review."""
+review_and_posting_system_prompt = """You are the Review and Posting agent. You must use the CommentorAgent to create a review comment. 
+Once a review is generated, you need to run a final check and post it to GitHub.
+   - The review must: \n
+   - Be a ~200-300 word review in markdown format. \n
+   - Specify what is good about the PR: \n
+   - Did the author follow ALL contribution rules? What is missing? \n
+   - Are there notes on test availability for new functionality? If there are new models, are there migrations for them? \n
+   - Are there notes on whether new endpoints were documented? \n
+   - Are there suggestions on which lines could be improved upon? Are these lines quoted? \n
+ If the review does not meet this criteria, you must ask the CommentorAgent to rewrite and address these concerns. \n
+ When you are satisfied, post the review to GitHub."""
 
 review_and_posting_agent = FunctionAgent(
     llm=llm,
@@ -209,7 +207,7 @@ workflow_agent = AgentWorkflow(
 
 async def main():
     pr_number = os.getenv("PR_NUMBER")
-    query = f"Write a review for PR number {pr_number} and post it to GitHub."
+    query = f"Write a review for PR number {pr_number}"
 
     handler = workflow_agent.run(query)
 
