@@ -31,4 +31,4 @@ See [PR #4](https://github.com/jushi819/recipes-api/pull/4) for an example of th
 
 ---
 
-Built as part of a deep-dive into AI agent engineering. Open to feedback and ideas — feel free to open an issue or reach out!
+Built as part of Hyperskill's AI Engineering course. Open to feedback and ideas. Feel free to open an issue or reach out!
