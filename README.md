@@ -1,67 +1,34 @@
-# Recipe-API
+## How It Runs
 
-**Recipe-API** is a Django REST Framework application that provides a simple, robust API for managing recipes, ingredients, categories, and user interactions.
+The workflow triggers on every `pull_request` event:
 
-## Features
+1. GitHub Actions checks out the code and installs dependencies
+2. Runs migrations and pytest with coverage reports
+3. Executes `agent.py`, passing the PR number and credentials as environment variables
+4. The agent analyzes the PR and posts a review
 
-- CRUD operations for recipes, ingredients, and categories
-- User authentication and permissions (JWT or Session Auth)
-- Filtering, pagination, and search support
+The review is posted as the `github-actions[bot]` user, making it look like an automated reviewer on every PR.
 
-## Installation
+## Setup
 
-```bash
-# Clone the repo
-git clone https://github.com/your-org/recipe-api.git
-cd recipe-api
+1. Clone the repo
+2. Create a `.env` file with your `GITHUB_TOKEN` and `OPENAI_API_KEY`
+3. Install dependencies: `poetry install`
+4. Run locally: `poetry run python agent.py`
 
-# Install dependencies and activate environment
-poetry install
-poetry shell
-```
+For GitHub Actions, add `OPENAI_API_KEY` as a repository secret. The `GITHUB_TOKEN` is provided automatically by GitHub.
 
-## Quickstart
+## What I Learned
 
-```bash
-# Apply database migrations
-poetry run python manage.py migrate
+- Designing agent architectures: experimented with multi-agent handoff patterns (Context → Commentor → Reviewer) before simplifying to a single agent with focused tools for reliability
+- Handling production edge cases: managing pending reviews, deduplicating commit data, and gracefully recovering from API errors
+- LLM prompt engineering: crafting system prompts that reliably trigger tool calls instead of hallucinating responses
+- CI/CD integration: orchestrating LLM agents inside GitHub Actions workflows with secure secret management
 
-# Create a superuser for the admin interface
-poetry run python manage.py createsuperuser
+## Demo
 
-# Run the development server
-poetry run python manage.py runserver
-```
+See [PR #4](https://github.com/jushi819/recipes-api/pull/4) for an example of the agent in action!
 
-Open your web browser and navigate to:
+---
 
-- `http://localhost:8000/api/recipes` to list all recipes
-- `http://localhost:8000/api/recipes` to create a new recipe
-- `http://localhost:8000/api/recipes/1` to retrieve a single recipe
-
-## Development
-
-We use Poetry for dependency management and virtual environments.
-
-1. **Install dependencies** (including dev dependencies):
-   ```bash
-   poetry install
-   poetry shell
-   ```
-2. **Format & Lint**:
-   ```bash
-   poetry run black . && poetry run isort . && poetry run flake8 .
-   ```
-3. **Run tests**:
-   ```bash
-   poetry run pytest
-   ```
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://github.com/the-nulldev/recipes-api/blob/main/CONTRIBUTING.md) for detailed guidelines on issues, pull requests, coding style, and testing.
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](https://github.com/the-nulldev/recipes-api/blob/main/LICENSE) for details.
-
+Built as part of a deep-dive into AI agent engineering. Open to feedback and ideas — feel free to open an issue or reach out!
