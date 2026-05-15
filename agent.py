@@ -75,9 +75,8 @@ def get_file_contents(file_path: str) -> str:
 def post_review_to_github(pr_number: int, comment: str) -> str:
     """Post a review comment to a GitHub pull request."""
     pr = repo.get_pull(pr_number)
-    pr.create_review(body=comment)
+    pr.create_review(body=comment, event="COMMENT")
     return f"Review posted to PR #{pr_number} successfully."
-
 
 # --- State management tools ---
 
@@ -139,22 +138,16 @@ context_agent = FunctionAgent(
 
 # --- CommentorAgent ---
 
-commentor_system_prompt = """You are the commentor agent that writes review comments for pull requests as a human reviewer would. \n 
-Ensure to do the following for a thorough review: 
- - Request for the PR details, changed files, and any other repo files you may need from the Context Agent. 
- - Once you have asked for all the needed information, write a good ~200-300 word review in markdown format detailing: \n
-    - What is good about the PR? \n
-    - Did the author follow ALL contribution rules? What is missing? \n
-    - Are there tests for new functionality? If there are new models, are there migrations for them? - use the diff to determine this. \n
-    - Are new endpoints documented? - use the diff to determine this. \n 
-    - Which lines could be improved upon? Quote these lines and offer suggestions the author could implement. \n
- - If you need any additional details, you must hand off to the Context Agent. \n
- - You should directly address the author. So your comments should sound like: \n
- "Thanks for fixing this. I think all places where we call quote should be fixed. Can you roll this fix out everywhere?"
- - IMPORTANT: You MUST follow these steps in order:
-   1. Call add_comment_to_state with your draft review.
-   2. Immediately call handoff to ReviewAndPostingAgent.
-   3. NEVER output a final response. Always hand off to ReviewAndPostingAgent."""
+commentor_system_prompt = """You write review comments for pull requests as a human reviewer would.
+
+You have already received PR context with details and changed files. Write your review NOW with what you have - do NOT ask for more information.
+
+INSTRUCTIONS (follow in order):
+1. Write a ~200-300 word review in markdown covering: what's good, contribution rules, tests, documentation, suggestions.
+2. Call add_comment_to_state with your review.
+3. Hand off to ReviewAndPostingAgent.
+
+DO NOT ask for diffs or more info. DO NOT return a final response. ALWAYS hand off after saving the comment."""
 
 commentor_agent = FunctionAgent(
     llm=llm,
