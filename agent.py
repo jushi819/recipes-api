@@ -70,6 +70,13 @@ def get_file_contents(file_path: str) -> str:
 def post_review_to_github(pr_number: int, comment: str) -> str:
     """Post a review comment to a GitHub pull request."""
     pr = repo.get_pull(pr_number)
+    # Delete any pending reviews from current user to avoid 422 error
+    for r in pr.get_reviews():
+        if r.state == "PENDING":
+            try:
+                r.delete()
+            except Exception:
+                pass
     pr.create_review(body=comment, event="COMMENT")
     return f"Review posted to PR #{pr_number} successfully."
 
